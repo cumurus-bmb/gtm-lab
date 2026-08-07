@@ -14,7 +14,9 @@
       onHit: function () {},
       setScenarioContext: function () {},
       registerScenarioSteps: function () {},
-      runScenario: function () {}
+      runScenario: function () {},
+      evaluate: function () { return { status: 'pending', reason: 'grader disabled' }; },
+      getDuplicateFlags: function () { return []; }
     };
     return;
   }
@@ -60,7 +62,129 @@
     };
   }
 
+  function evalParamSpec(actual, spec) {
+    return Object.keys(spec).every(function (op) {
+      switch (op) {
+        case 'equals': return actual === spec.equals;
+        case 'matches': return typeof actual === 'string' && new RegExp(spec.matches).test(actual);
+        case 'type': return spec.type === 'number'
+          ? (typeof actual === 'number' && !isNaN(actual))
+          : typeof actual === spec.type;
+        case 'gte': return typeof actual === 'number' && actual >= spec.gte;
+        case 'lte': return typeof actual === 'number' && actual <= spec.lte;
+        case 'one_of': return spec.one_of.indexOf(actual) !== -1;
+        case 'exists': return spec.exists ? actual !== undefined : actual === undefined;
+        default: return true;
+      }
+    });
+  }
+
+  function findForbidHit(challenge, hitList) {
+    var found = null;
+    (challenge.forbid || []).forEach(function (f) {
+      if (found) return;
+      hitList.forEach(function (h) {
+        if (found) return;
+        var eventMatches = f.event === '*' || h.event === f.event;
+        var contextMatches = !f.when || h.context === f.when;
+        if (eventMatches && contextMatches) found = h;
+      });
+    });
+    return found;
+  }
+
+  function evaluateChallenge(challenge, hitList) {
+    var forbidHit = findForbidHit(challenge, hitList);
+    if (forbidHit) {
+      return {
+        status: 'fail',
+        reason: '禁止イベント "' + forbidHit.event + '" がシナリオ "' + forbidHit.context + '" で発火しました'
+      };
+    }
+
+    if (!challenge.expect) {
+      // 「絶対に発火してはいけない」型の課題（例: tid無しの/thanks/）
+      var observeMs = challenge.observe_ms || 5000;
+      var loadTs = challenge._loadTs || (challenge._loadTs = Date.now());
+      if (Date.now() - loadTs < observeMs) {
+        return { status: 'pending', reason: '観測中（' + observeMs + 'ms）' };
+      }
+      return { status: 'pass', reason: 'PASS（禁止イベントは発火しませんでした）' };
+    }
+
+    var exp = challenge.expect;
+    var eventHits = hitList.filter(function (h) { return h.event === exp.event; });
+    if (eventHits.length === 0) {
+      return { status: 'pending', reason: 'en=' + exp.event + ' 未受信' };
+    }
+
+    var paramSpecs = exp.params || {};
+    var mismatch = null;
+    var paramOk = eventHits.filter(function (h) {
+      return Object.keys(paramSpecs).every(function (p) {
+        var ok = evalParamSpec(h.params[p], paramSpecs[p]);
+        if (!ok && !mismatch) mismatch = { param: p, actual: h.params[p], expect: paramSpecs[p] };
+        return ok;
+      });
+    });
+
+    if (paramOk.length === 0) {
+      return {
+        status: 'fail',
+        reason: 'en=' + exp.event + ' は受信したが ep.' + mismatch.param + ' が ' +
+          JSON.stringify(mismatch.actual) + '（期待: ' + JSON.stringify(mismatch.expect) + '）'
+      };
+    }
+
+    var windowMs = exp.window_ms || 5000;
+    var first = paramOk[0].ts;
+    var inWindow = paramOk.filter(function (h) { return h.ts - first <= windowMs; });
+    var count = exp.count || { exactly: 1 };
+    var countOk = count.exactly !== undefined ? inWindow.length === count.exactly
+      : count.gte !== undefined ? inWindow.length >= count.gte
+      : count.lte !== undefined ? inWindow.length <= count.lte
+      : true;
+
+    if (!countOk) {
+      return {
+        status: 'fail',
+        reason: '発火回数が期待と異なる（実測: ' + inWindow.length + '回、期待: ' + JSON.stringify(count) + '）'
+      };
+    }
+
+    return { status: 'pass', reason: 'PASS' };
+  }
+
+  var SENT_IDS_KEY = 'labgrader_sent_ids_v1';
+  var dupFlags = [];
+  var recentSignatures = [];
+
+  function checkSessionDedup(hit) {
+    if (hit.event !== 'purchase' && hit.event !== 'generate_lead') return;
+    var tid = hit.params && hit.params.transaction_id;
+    if (!tid) return;
+    var key = hit.event + ':' + tid;
+    var sent;
+    try { sent = JSON.parse(localStorage.getItem(SENT_IDS_KEY) || '{}'); } catch (e) { sent = {}; }
+    if (sent[key]) {
+      dupFlags.push({ event: hit.event, key: key, ts: hit.ts });
+    } else {
+      sent[key] = hit.ts;
+      try { localStorage.setItem(SENT_IDS_KEY, JSON.stringify(sent)); } catch (e) { /* storage full/unavailable */ }
+    }
+  }
+
+  function checkRapidDuplicate(hit) {
+    var sig = hit.event + '|' + JSON.stringify(hit.params);
+    recentSignatures = recentSignatures.filter(function (s) { return hit.ts - s.ts < 500; });
+    var isDup = recentSignatures.some(function (s) { return s.sig === sig; });
+    recentSignatures.push({ sig: sig, ts: hit.ts });
+    return isDup; // WARN only, not surfaced as FAIL — panel (Task 5) shows it in the hit log
+  }
+
   function notify(hit) {
+    checkSessionDedup(hit);
+    hit.rapidDuplicate = checkRapidDuplicate(hit);
     hits.push(hit);
     for (var i = 0; i < listeners.length; i++) {
       try { listeners[i](hit); } catch (e) { /* one bad listener must not break others */ }
@@ -140,6 +264,8 @@
     getHits: function () { return hits.slice(); },
     onHit: function (fn) { listeners.push(fn); },
     setScenarioContext: function (name) { currentContext = name || null; },
+    evaluate: evaluateChallenge,
+    getDuplicateFlags: function () { return dupFlags.slice(); },
     _internal: { buildNormalizedHit: buildNormalizedHit, parseParamString: parseParamString }
   };
 })();
