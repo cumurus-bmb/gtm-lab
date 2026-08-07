@@ -57,8 +57,14 @@
   }
 
   function submitForm() {
+    var errorEl = mount.querySelector('[data-role="error"]');
+    errorEl.style.display = 'none';
+
     var email = mount.querySelector('input[type="email"]').value;
     var isFail = email === 'fail@example.com';
+    var submitBtn = mount.querySelector('.btn-primary');
+    if (submitBtn.disabled) return; // ignore clicks while a request is already in flight
+    submitBtn.disabled = true;
 
     if (isFail && window.LabGrader) window.LabGrader.setScenarioContext('submit_failed');
 
@@ -69,6 +75,7 @@
       if (window.LabGrader) window.LabGrader.setScenarioContext(null);
     }).catch(function () {
       mount.querySelector('[data-role="error"]').style.display = 'block';
+      submitBtn.disabled = false;
       setTimeout(function () { if (window.LabGrader) window.LabGrader.setScenarioContext(null); }, 500);
     });
   }
