@@ -49,7 +49,7 @@
 
   function makeCard(n) {
     var sku = 'SKU-' + String(n).padStart(3, '0');
-    var name = NAMES[(n - 1) % NAMES.length] + '（' + n + '）';
+    var name = NAMES[(n - 1) % NAMES.length];
     var card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = '<h3>' + name + '</h3><p class="item">¥' + (1000 * (n % 20 + 1)).toLocaleString() + '（税込）</p>' +
