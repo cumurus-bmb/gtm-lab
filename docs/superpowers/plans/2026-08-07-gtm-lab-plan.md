@@ -2268,11 +2268,11 @@ git commit -m "fix: integration pass — consistent noindex, script order, and n
 ### Task 18: `CLAUDE.md`
 
 **Files:**
-- Create: `CLAUDE.md`
+- Modify: `CLAUDE.md` (already exists with the required header and a "会話言語: 日本語" section — preserve that section verbatim, add the rest below it)
 
-- [ ] **Step 1: Write `CLAUDE.md`**
+- [ ] **Step 1: Extend `CLAUDE.md`**
 
-Cover (in the standard CLAUDE.md format — commands + architecture, no fluff):
+Keep the existing header and "会話言語" section as-is. Add (in the standard CLAUDE.md format — commands + architecture, no fluff):
 - `docker compose up -d` / `down`, `http://localhost:8080`, no build step, no Node.
 - How to set `GTM_ID`/`GA4_MEASUREMENT_ID` in `site/config.js` before testing against a real container.
 - The Global Constraints and Grading Engine Design Notes from this plan (they define invariants future changes must not break: script load order, no `id`/`data-*` hints, `dataLayer.push` never called from `site/`, `LAB_GRADER_ENABLED=false` fully disables the panel).
