@@ -18,9 +18,10 @@ These apply to every task below; do not violate them even where a task's code sa
 - Latest Chrome only — no cross-browser polyfills needed.
 - Serve locally via `docker compose up -d`, reachable at `http://localhost:8080`.
 - No `id` attribute anywhere in `site/` HTML.
-- No `data-*` measurement-hint attributes anywhere in `site/` HTML.
+- No `data-*` **measurement-hint** attributes anywhere in `site/` HTML — nothing that hands GTM an easy selector for an event name, SKU, or ID (e.g. `data-sku=`, `data-event=`, `data-track=`). A generic `data-role="..."` used purely as a same-page JS DOM-mount marker (e.g. `data-role="form-mount"`) is allowed — it identifies a slot for the page's own script, not a measurement target, and carries no tracking semantics a learner could read off in GTM.
 - Reuse generic, duplicated class names across unrelated elements: `.btn`, `.card`, `.link`, `.item`, `.box`. Never invent a uniquely-named class whose sole purpose is to make an element easy to target for tracking.
-- Header and footer markup is hand-duplicated verbatim in every page's HTML — never generated or included via JS.
+- Header and footer markup is hand-duplicated verbatim in every page's HTML — never generated or included via JS. This is a deliberate spec requirement, not an oversight: task reviewers must not flag this duplication as a DRY violation.
+- The GTM container snippet (`<script>(function(w,d,s,l,i){...})(...)</script>`) is likewise duplicated verbatim in every page's `<head>` — required because there is no build step or shared template to include it from. Reviewers must not flag this as duplication either.
 - `site/` JavaScript never calls `dataLayer.push()` for a custom/measurement event. `dataLayer` is initialized once in `config.js` and otherwise left entirely to the learner's own GTM work. (The grading engine's internal `setScenarioContext()` calls are not `dataLayer` pushes and are invisible to GTM — see Grading Engine Design Notes below.)
 - `config.js` and `lab-grader.js` must be the first two `<script>` tags in every page's `<head>`, loaded synchronously (no `async`/`defer`), before the GTM container snippet — the network patch must be live before `gtm.js` starts firing.
 - `robots.txt` contains `Disallow: /`, and every page's `<head>` includes `<meta name="robots" content="noindex,nofollow">`.
