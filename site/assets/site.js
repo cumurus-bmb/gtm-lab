@@ -10,7 +10,6 @@ window.LabSite = (function () {
     var key = 'lab_cart_count';
     var count = parseInt(localStorage.getItem(key) || '0', 10) + delta;
     localStorage.setItem(key, String(count));
-    var badge = document.querySelector('header .item span.item, header .badge, header span.badge');
     var badgeEl = document.querySelector('header .badge');
     if (badgeEl) badgeEl.textContent = String(count);
   }
