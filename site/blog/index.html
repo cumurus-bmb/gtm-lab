@@ -42,7 +42,6 @@
   var view = document.querySelector('[data-role="view"]') || document.querySelector('section.box');
   var loadedCount = 0;
   var engageTimer = null;
-  var engageStart = 0;
 
   function articleId(n) { return 'post-' + n; }
 
@@ -91,8 +90,7 @@
     var n = parseInt(id.replace('post-', ''), 10) || 1;
     view.innerHTML = '<a class="link" href="./">一覧へ戻る</a>' +
       '<h1>' + TITLES[(n - 1) % TITLES.length] + '</h1>' +
-      '<p class="item">本文のダミーテキストです。'.repeat ? '<p class="item">' + '本文のダミーテキストです。'.repeat(20) + '</p>' : '<p class="item">本文のダミーテキストです。</p>';
-    engageStart = Date.now();
+      '<p class="item">' + '本文のダミーテキストです。'.repeat(20) + '</p>';
     engageTimer = setTimeout(function () {
       view.classList.add('is-engaged'); // 60秒閲覧の汎用マーカー。GTMのタイマー/カスタムJS変数と組み合わせて使う
     }, 60000);
