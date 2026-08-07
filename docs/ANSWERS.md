@@ -223,7 +223,7 @@ function() {
 
 **変数:** `form_id` はData Layer Variable（変数名 `embedFormId`）。
 
-**なぜこの方法か:** `/embed/` のiframe（`form.html`）は同一オリジンだが、GTMコンテナ自体を読み込んでいない別ドキュメントなので、iframe内でのフォーム送信は親ページのGTMからは一切見えない。iframe側のスクリプトは送信時に `window.parent.postMessage({source:'gtm-lab-embed-form', formId:'embed_contact'}, ...)` を送っているので、親ページ側で `message` イベントを受け取り、そこから初めてGTMの世界（dataLayer）に橋渡しする必要がある。親ページの `site.js` は届いたメッセージを `window.__lastEmbedFormMessage` に保持するだけであり、この変数をポーリングするより、GTM自身が `message` リスナーを持って直接 `dataLayer.push` する方がイベント欠落や競合が起きにくく確実。
+**なぜこの方法か:** `/embed/` のiframe（`form.html`）は同一オリジンだが、GTMコンテナ自体を読み込んでいない別ドキュメントなので、iframe内でのフォーム送信は親ページのGTMからは一切見えない。iframe側のスクリプトは送信時に `window.parent.postMessage({source:'gtm-lab-embed-form', formId:'embed_contact'}, ...)` を送っているので、親ページ側で `message` イベントを受け取り、そこから初めてGTMの世界（dataLayer）に橋渡しする必要がある。親ページ（`site/embed/index.html`）のインラインスクリプトは届いたメッセージを `window.__lastEmbedFormMessage` に保持するだけであり、この変数をポーリングするより、GTM自身が `message` リスナーを持って直接 `dataLayer.push` する方がイベント欠落や競合が起きにくく確実。
 </details>
 
 <details><summary>L4-01: tid付き直アクセスでpurchase・二重計上禁止</summary>
@@ -343,22 +343,47 @@ function() {
 
 <details><summary>L5-04: ビューポート進入でview_item_list</summary>
 
-**トリガー:** 組み込みの「要素の表示」（Element Visibility）トリガー。選択方法はCSSセレクタで `.card.is-viewed`。「要素ごとに1回」、「DOMの変更を監視する」を有効化。発火条件に Page Path が `/products/` を追加。
+**トリガー:** カスタムイベントトリガー、イベント名 `view_item_list`（下記のカスタムHTMLタグがdataLayerに直接pushする）。このカスタムHTMLタグ自体は「DOM Ready」または「ページビュー」トリガー（Page Path `/products/`）で1回だけ発火させる：
 
-**変数:** `item_id`（表示されたカード内のリンクからsku抽出。L2-02と同じ考え方）:
+```html
+<script>
+(function () {
+  if (!('IntersectionObserver' in window)) return;
+  var grid = document.querySelector('[data-role="grid"]');
+  if (!grid) return;
+  var seen = new WeakSet();
 
-```js
-function() {
-  var card = {{Click Element}};
-  var link = card && card.querySelector('a.btn-primary');
-  if (!link || !link.href) return undefined;
-  try {
-    return new URL(link.href).searchParams.get('sku') || undefined;
-  } catch (e) {
-    return undefined;
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting || seen.has(entry.target)) return;
+      seen.add(entry.target);
+      var link = entry.target.querySelector('a.btn-primary');
+      var sku = null;
+      if (link && link.href) {
+        try { sku = new URL(link.href).searchParams.get('sku'); } catch (e) {}
+      }
+      var h3 = entry.target.querySelector('h3');
+      window.dataLayer.push({
+        event: 'view_item_list',
+        item_id: sku || undefined,
+        item_name: h3 ? h3.textContent.trim() : undefined
+      });
+    });
+  }, { threshold: 0.5 });
+
+  function observeAll() {
+    grid.querySelectorAll('.card').forEach(function (card) { observer.observe(card); });
   }
-}
+  observeAll();
+  // 無限スクロールで後から追加されるカードも同じobserverの監視対象に加える
+  new MutationObserver(observeAll).observe(grid, { childList: true });
+})();
+</script>
 ```
 
-**なぜこの方法か:** `/products/` のスクリプトは自前のIntersectionObserver（`threshold: 0.5`）で各カードが50%以上見えた瞬間に `card.classList.add('is-viewed')` を実行し、しかも `MutationObserver` で無限スクロールにより後から追加されたカードも同じ仕組みで監視対象に加えている——コード中のコメント通り、これは「学習者がGTMのElement Visibilityトリガーで使う汎用マーカー」として用意されたものなので素直に利用する。GTM側の「要素の表示」トリガーを `.card` 単体ではなく `.card.is-viewed` に向けることで、サイト側がすでに検証済みの「50%以上見えた」判定に相乗りでき、GTM独自のIntersectionObserver実装との閾値のズレを気にする必要がなくなる。「DOMの変更を監視する」を有効にしておけば、無限スクロールで後から追加され、後から`is-viewed`クラスが付くカードも取りこぼさない。「要素ごとに1回」により、1カードにつき最大1回しか発火しない。
+**変数:** `item_id` / `item_name` はどちらもData Layer Variable（変数名 `item_id` / `item_name`）としてそのまま読む。dataLayer.push時点ですでに1カード分の値へ確定しているため、GTM側でCustom JavaScript Variableによる抽出は不要。
+
+**なぜこの方法か:** GTM組み込みの「要素の表示」（Element Visibility）トリガーは、クリック系オートイベント（`gtm.click`）が `{{Click Element}}` という「今まさに発火の原因になった要素」を返す変数を持つのに対し、可視化系オートイベント（`gtm.elementVisibility`）には同等の「発火した個別要素」を返す組み込み変数が存在しない（公開されているのは「Percent Visible」「On-Screen Duration」など集計的な値のみ）。セレクタ文字列（`.card.is-viewed` 等）をCustom JavaScript Variableで `document.querySelector()` しても、そのセレクタに一致する**最初の**カードしか返らず、「今表示されたカード」を特定できない——`/products/` は12〜24枚が同じ `.card` 構造で並ぶため、これは致命的にずれる。
+
+そのためこの課題は「要素が見えた瞬間に、その要素固有のデータを持って`dataLayer.push`できる仕組み」を自前で持つ必要があり、カスタムHTMLタグの中で独自のIntersectionObserverを設置するのが実務的な標準解になる。`entry.target` はコールバック実行時点でobserverが検知した**その要素そのもの**を指すため、`sku`・商品名の抽出が要素単位で正確に行える。`WeakSet` で「発火済みカード」を記録することで1カード1回のみに絞り、`grid` 要素への `MutationObserver` で無限スクロール分の新規カードも同じobserverに登録し続ける（サイト側が `products/index.html` 内に用意している `is-viewed` マーカー用のIntersectionObserver/MutationObserverと同じ発想だが、そちらはあくまで学習者向けの目視確認用フックであり、GTMのタグ自身が同等の仕組みを独立して持つ必要がある）。
 </details>
