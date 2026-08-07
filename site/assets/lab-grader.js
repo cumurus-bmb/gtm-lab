@@ -259,11 +259,180 @@
     });
   }
 
+  // Scenario registry and runner
+  var scenarioRegistry = {};
+
+  function registerScenarioSteps(pageId, steps) {
+    scenarioRegistry[pageId] = steps;
+  }
+
+  function runScenario(pageId, stepNames) {
+    var steps = scenarioRegistry[pageId] || {};
+    var i = 0;
+    function next() {
+      if (i >= stepNames.length) return;
+      var fn = steps[stepNames[i]];
+      i++;
+      if (typeof fn === 'function') {
+        Promise.resolve(fn()).then(function () { setTimeout(next, 300); });
+      } else {
+        setTimeout(next, 300);
+      }
+    }
+    next();
+  }
+
+  // Panel UI
+  var PROGRESS_KEY = 'labgrader_progress_v1';
+
+  function currentPath() {
+    var p = location.pathname;
+    if (p.length > 1 && p.slice(-1) === '/') p = p; // keep trailing slash form used by challenges.js
+    return p;
+  }
+
+  function pageChallenges() {
+    var list = window.LAB_CHALLENGES || [];
+    var path = currentPath();
+    return list.filter(function (c) { return c.page === '*' || c.page === path; });
+  }
+
+  function loadProgress() {
+    try { return JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}'); } catch (e) { return {}; }
+  }
+
+  function saveProgress(progress) {
+    try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); } catch (e) { /* storage unavailable */ }
+  }
+
+  function injectStyle() {
+    var style = document.createElement('style');
+    style.textContent =
+      '.lg-panel{position:fixed;right:12px;bottom:12px;width:360px;max-height:70vh;' +
+      'background:#1e1e2e;color:#e6e6e6;font:12px/1.5 -apple-system,sans-serif;' +
+      'border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.4);z-index:999999;' +
+      'display:flex;flex-direction:column;overflow:hidden}' +
+      '.lg-panel.lg-collapsed .lg-body{display:none}' +
+      '.lg-head{display:flex;justify-content:space-between;align-items:center;' +
+      'padding:8px 10px;background:#11111b;cursor:pointer}' +
+      '.lg-body{overflow-y:auto;padding:8px 10px}' +
+      '.lg-row{display:flex;justify-content:space-between;gap:6px;padding:4px 0;' +
+      'border-bottom:1px solid #333}' +
+      '.lg-pass{color:#8bd450}.lg-fail{color:#ff6b6b}.lg-pending{color:#999}' +
+      '.lg-btn{background:#333;color:#eee;border:none;border-radius:4px;' +
+      'padding:3px 8px;cursor:pointer;font-size:11px}' +
+      '.lg-hit{padding:4px 0;border-bottom:1px solid #333;cursor:pointer}' +
+      '.lg-hit pre{white-space:pre-wrap;word-break:break-all;margin:4px 0 0}';
+    document.head.appendChild(style);
+  }
+
+  function renderPanel() {
+    var panel = document.createElement('div');
+    panel.className = 'lg-panel';
+
+    var head = document.createElement('div');
+    head.className = 'lg-head';
+    var progress = loadProgress();
+    var total = (window.LAB_CHALLENGES || []).length;
+    var passed = Object.keys(progress).filter(function (k) { return progress[k] === 'pass'; }).length;
+    head.innerHTML = '<strong>採点パネル (' + passed + '/' + total + ')</strong>';
+    head.addEventListener('click', function () { panel.classList.toggle('lg-collapsed'); });
+    panel.appendChild(head);
+
+    var body = document.createElement('div');
+    body.className = 'lg-body';
+
+    var challengeList = document.createElement('div');
+    challengeList.className = 'lg-challenges';
+    body.appendChild(challengeList);
+
+    var hitLog = document.createElement('div');
+    hitLog.className = 'lg-hitlog';
+    body.appendChild(hitLog);
+
+    var controls = document.createElement('div');
+    var resetBtn = document.createElement('button');
+    resetBtn.className = 'lg-btn';
+    resetBtn.textContent = 'このページをリセット';
+    resetBtn.addEventListener('click', function () {
+      var prog = loadProgress();
+      pageChallenges().forEach(function (c) { delete prog[c.id]; });
+      saveProgress(prog);
+      renderChallenges();
+    });
+    var exportBtn = document.createElement('button');
+    exportBtn.className = 'lg-btn';
+    exportBtn.textContent = 'エクスポート';
+    exportBtn.addEventListener('click', function () {
+      var payload = JSON.stringify({ progress: loadProgress(), hits: window.LabGrader.getHits() }, null, 2);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(payload).catch(function () {});
+      }
+    });
+    controls.appendChild(resetBtn);
+    controls.appendChild(exportBtn);
+    body.appendChild(controls);
+
+    panel.appendChild(body);
+    document.body.appendChild(panel);
+
+    function renderChallenges() {
+      var prog = loadProgress();
+      var hits = window.LabGrader.getHits();
+      var dupFlags = window.LabGrader.getDuplicateFlags();
+      challengeList.innerHTML = '';
+      pageChallenges().forEach(function (c) {
+        var result = window.LabGrader.evaluate(c, hits);
+        var dupHit = dupFlags.some(function (d) { return c.expect && d.event === c.expect.event; });
+        if (dupHit) result = { status: 'fail', reason: '二重計上を検出しました（同一IDが再送されました）' };
+        prog[c.id] = result.status;
+        var row = document.createElement('div');
+        row.className = 'lg-row';
+        var label = result.status === 'pass' ? 'lg-pass' : result.status === 'fail' ? 'lg-fail' : 'lg-pending';
+        row.innerHTML = '<span>' + c.title + '</span><span class="' + label + '">' +
+          (result.status === 'pass' ? 'PASS' : result.status === 'fail' ? 'FAIL' : '…') + '</span>';
+        row.title = result.reason;
+        challengeList.appendChild(row);
+      });
+      saveProgress(prog);
+      var newPassed = Object.keys(prog).filter(function (k) { return prog[k] === 'pass'; }).length;
+      head.innerHTML = '<strong>採点パネル (' + newPassed + '/' + total + ')</strong>';
+    }
+
+    function renderHitLog(hit) {
+      var row = document.createElement('div');
+      row.className = 'lg-hit';
+      row.textContent = new Date(hit.ts).toLocaleTimeString() + ' en=' + hit.event;
+      var pre = document.createElement('pre');
+      pre.style.display = 'none';
+      pre.textContent = JSON.stringify(hit, null, 2);
+      row.addEventListener('click', function () {
+        pre.style.display = pre.style.display === 'none' ? 'block' : 'none';
+      });
+      row.appendChild(pre);
+      hitLog.insertBefore(row, hitLog.firstChild);
+    }
+
+    window.LabGrader.onHit(function (hit) {
+      renderHitLog(hit);
+      renderChallenges();
+    });
+
+    renderChallenges();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    injectStyle();
+    renderPanel();
+  });
+
   window.LabGrader = {
     enabled: true,
     getHits: function () { return hits.slice(); },
     onHit: function (fn) { listeners.push(fn); },
     setScenarioContext: function (name) { currentContext = name || null; },
+    registerScenarioSteps: registerScenarioSteps,
+    runScenario: runScenario,
     evaluate: evaluateChallenge,
     getDuplicateFlags: function () { return dupFlags.slice(); },
     _internal: { buildNormalizedHit: buildNormalizedHit, parseParamString: parseParamString }
