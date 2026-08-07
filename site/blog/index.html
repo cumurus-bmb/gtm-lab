@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ブログ | GTM実践学習ラボ</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../config.js"></script>
+<script src="../assets/lab-grader.js"></script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',window.LAB_CONFIG.GTM_ID);</script>
+<!-- End Google Tag Manager -->
+<script src="../assets/challenges.js"></script>
+</head>
+<body>
+<header class="box">
+  <a class="link" href="../">GTM実践学習ラボ</a>
+  <nav class="box">
+    <a class="link" href="../products/">商品一覧</a>
+    <a class="link" href="../contact/">お問い合わせ</a>
+    <a class="link" href="./">ブログ</a>
+    <a class="link" href="../modal/">資料請求</a>
+    <a class="link" href="../embed/">埋め込みフォーム</a>
+    <a class="link" href="../downloads/">資料ダウンロード</a>
+  </nav>
+  <span class="item">カート: <span class="badge">0</span></span>
+</header>
+
+<section class="box" data-role="view"></section>
+
+<footer class="box">
+  <p class="item">GTM実践学習ラボ（練習用ダミーサイト・検索非対象）</p>
+  <a class="btn btn-primary" href="../">無料で試す</a>
+</footer>
+
+<script src="../assets/site.js"></script>
+<script>
+(function () {
+  var TITLES = ['GTMの基本を学ぶ', 'データレイヤー設計のコツ', '二重計上を防ぐ方法', 'SPAでのpage_view設計',
+    'GA4のイベント設計', 'Consent Modeの導入手順', 'デバッグの実践', 'サーバーサイド計測入門'];
+  var view = document.querySelector('[data-role="view"]') || document.querySelector('section.box');
+  var loadedCount = 0;
+  var engageTimer = null;
+  var engageStart = 0;
+
+  function articleId(n) { return 'post-' + n; }
+
+  function renderList() {
+    clearEngageTimer();
+    var html = '<h1>ブログ</h1><div class="box" data-role="list"></div>';
+    view.innerHTML = html;
+    loadedCount = 0;
+    loadMore(6);
+    window.addEventListener('scroll', onScroll);
+  }
+
+  function onScroll() {
+    if (!document.querySelector('[data-role="list"]')) return;
+    var nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 300;
+    if (nearBottom) loadMore(4);
+  }
+
+  function loadMore(count) {
+    var list = document.querySelector('[data-role="list"]');
+    if (!list) return;
+    for (var i = 0; i < count && loadedCount < 20; i++) {
+      loadedCount++;
+      var n = loadedCount;
+      var card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = '<h3>' + TITLES[(n - 1) % TITLES.length] + '（' + n + '）</h3>' +
+        '<a class="link" href="?post=' + articleId(n) + '">続きを読む</a>';
+      card.querySelector('.link').addEventListener('click', function (e) {
+        e.preventDefault();
+        var id = new URL(e.target.href).searchParams.get('post');
+        history.pushState({ post: id }, '', '?post=' + id);
+        renderArticle(id);
+      });
+      list.appendChild(card);
+    }
+  }
+
+  function clearEngageTimer() {
+    if (engageTimer) { clearTimeout(engageTimer); engageTimer = null; }
+  }
+
+  function renderArticle(id) {
+    clearEngageTimer();
+    window.removeEventListener('scroll', onScroll);
+    var n = parseInt(id.replace('post-', ''), 10) || 1;
+    view.innerHTML = '<a class="link" href="./">一覧へ戻る</a>' +
+      '<h1>' + TITLES[(n - 1) % TITLES.length] + '</h1>' +
+      '<p class="item">本文のダミーテキストです。'.repeat ? '<p class="item">' + '本文のダミーテキストです。'.repeat(20) + '</p>' : '<p class="item">本文のダミーテキストです。</p>';
+    engageStart = Date.now();
+    engageTimer = setTimeout(function () {
+      view.classList.add('is-engaged'); // 60秒閲覧の汎用マーカー。GTMのタイマー/カスタムJS変数と組み合わせて使う
+    }, 60000);
+  }
+
+  function render() {
+    var params = new URLSearchParams(location.search);
+    var post = params.get('post');
+    if (post) renderArticle(post); else renderList();
+  }
+
+  window.addEventListener('popstate', render);
+  render();
+})();
+</script>
+</body>
+</html>
