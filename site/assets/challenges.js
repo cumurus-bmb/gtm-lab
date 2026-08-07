@@ -65,7 +65,7 @@ window.LAB_CHALLENGES = [
   { id: 'L4-02', level: 4, page: '/thanks/', title: 'tid無しではpurchaseを発火させない',
     brief: 'tid パラメータが無い状態で /thanks/ に直アクセスしても purchase を発火させないこと。',
     constraints: [],
-    forbid: [{ event: 'purchase' }],
+    forbid: [{ event: 'purchase', when: 'thanks_no_tid' }],
     observe_ms: 5000 },
 
   { id: 'L4-03', level: 4, page: '/blog/', title: 'pushState遷移でpage_viewを追従',

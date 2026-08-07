@@ -49,6 +49,10 @@ document.addEventListener('DOMContentLoaded', function () {
   } else {
     content.innerHTML = '<h1 class="item">ページが見つかりません</h1>' +
       '<p class="item">正しいご注文完了リンクからアクセスしてください。</p>';
+    if (window.LabGrader) window.LabGrader.setScenarioContext('thanks_no_tid');
+    setTimeout(function () {
+      if (window.LabSite) window.LabSite.resetScenarioContext();
+    }, 500);
   }
 });
 </script>
