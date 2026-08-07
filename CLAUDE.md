@@ -55,9 +55,9 @@ These apply to every file under `site/`; a future change must not break them eve
   - `evaluate(challenge, hitList)` — score one challenge object against a hit list; returns `{ status: 'pass'|'fail'|'pending', reason }`.
   - `setScenarioContext(name)` — tag subsequent captured hits with `hit.context = name`, for `forbid.when` matching (see below). Not a `dataLayer` push.
   - `registerScenarioSteps(pageId, steps)` / `runScenario(pageId, stepNames)` — pages register named step functions; used to drive scripted scenarios (e.g. fill-and-submit-a-failing-form) from the panel or console.
-  - `getDuplicateFlags()` — hits flagged as duplicates (session-dedup on `transaction_id` for `purchase`/`generate_lead`, and rapid <500ms identical-signature repeats).
+  - `getDuplicateFlags()` — session-dedup flags only (`transaction_id` reuse for `purchase`/`generate_lead` across page loads via `localStorage`). Rapid duplicates (<500ms, identical event+params) are a separate, non-blocking signal: exposed as `hit.rapidDuplicate` on individual hits returned by `getHits()`, not through `getDuplicateFlags()`.
   - When `LAB_GRADER_ENABLED === false`, `window.LabGrader` is replaced with no-op stubs (`getHits` returns `[]`, `evaluate` returns `pending`) and no panel is rendered.
-- `site/assets/challenges.js` — data only: `window.LAB_CHALLENGES`, an array of 18 challenge objects (`id`, `level` 1–5, `page`, `title`, `brief`, `constraints`, `expect`, optional `forbid`/`scenario`/`observe_ms`).
+- `site/assets/challenges.js` — data only: `window.LAB_CHALLENGES`, an array of 18 challenge objects (`id`, `level` 1–5, `page`, `title`, `brief`, `constraints`, optional `expect`/`forbid`/`scenario`/`observe_ms`).
 
 Schema extensions this project adds on top of the literal spec schema (documented once here, kept consistent with `docs/CHALLENGES.md`/`docs/ANSWERS.md`):
 - **`page: '*'`** — challenge applies on every page; the panel evaluates it regardless of current path, against hits captured since the current page load.
