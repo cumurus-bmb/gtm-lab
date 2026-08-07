@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>資料請求 | GTM実践学習ラボ</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../config.js"></script>
+<script src="../assets/lab-grader.js"></script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',window.LAB_CONFIG.GTM_ID);</script>
+<!-- End Google Tag Manager -->
+<script src="../assets/challenges.js"></script>
+</head>
+<body>
+<header class="box">
+  <a class="link" href="../">GTM実践学習ラボ</a>
+  <nav class="box">
+    <a class="link" href="../products/">商品一覧</a>
+    <a class="link" href="../contact/">お問い合わせ</a>
+    <a class="link" href="../blog/">ブログ</a>
+    <a class="link" href="./">資料請求</a>
+    <a class="link" href="../embed/">埋め込みフォーム</a>
+    <a class="link" href="../downloads/">資料ダウンロード</a>
+  </nav>
+  <span class="item">カート: <span class="badge">0</span></span>
+  <button class="btn" type="button">資料請求</button>
+</header>
+
+<section class="box">
+  <h1>資料請求</h1>
+  <aside class="box">
+    <p class="item">サイドバーからのご請求はこちら</p>
+    <button class="btn" type="button">資料請求</button>
+  </aside>
+</section>
+
+<footer class="box">
+  <p class="item">GTM実践学習ラボ（練習用ダミーサイト・検索非対象）</p>
+  <button class="btn" type="button">資料請求</button>
+  <a class="btn btn-primary" href="../">無料で試す</a>
+</footer>
+
+<div class="box" data-role="modal-root"></div>
+
+<script src="../assets/site.js"></script>
+<script>
+(function () {
+  var LOCATIONS = { HEADER: 'header', ASIDE: 'sidebar', FOOTER: 'footer' };
+  var root = document.querySelector('[data-role="modal-root"]');
+
+  function modalMarkup() {
+    return '<div class="box">' +
+      '<div class="box">' +
+      '<label class="item">お名前<br><input class="box" type="text" name="name"></label>' +
+      '<label class="item">メールアドレス<br><input class="box" type="email" name="email"></label>' +
+      '<button class="btn btn-primary" type="button">送信する</button>' +
+      '<button class="btn" type="button" data-role="close">閉じる</button>' +
+      '</div></div>';
+  }
+
+  function openModal(location) {
+    root.innerHTML = modalMarkup();
+    if (window.LabGrader) window.LabGrader.setScenarioContext('modal_' + location);
+    var nameInput = root.querySelector('input[name="name"]');
+    var fired = false;
+    function markStart() {
+      if (fired) return;
+      fired = true;
+      // form_startの発火材料はGTM側で用意する（フォーカスイベント等）。ここではlocationの記録のみ。
+    }
+    nameInput.addEventListener('focus', markStart, { once: true });
+    root.querySelector('[data-role="close"]').addEventListener('click', function () {
+      root.innerHTML = '';
+      if (window.LabGrader) window.LabGrader.setScenarioContext(null);
+    });
+  }
+
+  document.querySelector('header .btn').addEventListener('click', function () { openModal(LOCATIONS.HEADER); });
+  document.querySelector('aside .btn').addEventListener('click', function () { openModal(LOCATIONS.ASIDE); });
+  document.querySelector('footer .btn:not(.btn-primary)').addEventListener('click', function () { openModal(LOCATIONS.FOOTER); });
+})();
+</script>
+</body>
+</html>
