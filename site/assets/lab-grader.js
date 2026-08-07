@@ -19,7 +19,7 @@
     return;
   }
 
-  var COLLECT_URL_RE = /^https:\/\/(www\.)?(google-analytics\.com|analytics\.google\.com)\/g\/collect/;
+  var COLLECT_URL_RE = /^https:\/\/(www\.)?(google-analytics\.com|analytics\.google\.com)\/g\/collect(?:$|[/?])/;
 
   function parseParamString(qs) {
     var params = {};
@@ -68,7 +68,6 @@
   }
 
   function parseAndEmit(url, bodyStr) {
-    var path = String(url).split('?')[0];
     if (!COLLECT_URL_RE.test(String(url))) return;
     var query = String(url).indexOf('?') !== -1 ? String(url).slice(String(url).indexOf('?') + 1) : '';
     // バッチ送出時はPOSTボディが改行区切りで複数イベント分並ぶ。各行を個別ヒットとして扱う。
