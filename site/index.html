@@ -5,16 +5,56 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>GTM実践学習ラボ</title>
+<link rel="stylesheet" href="assets/style.css">
 <script src="config.js"></script>
 <script src="assets/lab-grader.js"></script>
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',window.LAB_CONFIG.GTM_ID);</script>
 <!-- End Google Tag Manager -->
 <script src="assets/challenges.js"></script>
-<script src="assets/site.js"></script>
 </head>
 <body>
-<h1>GTM実践学習ラボ</h1>
-<p>準備中。</p>
+<header class="box">
+  <a class="link" href="/">GTM実践学習ラボ</a>
+  <nav class="box">
+    <a class="link" href="/products/">商品一覧</a>
+    <a class="link" href="/contact/">お問い合わせ</a>
+    <a class="link" href="/blog/">ブログ</a>
+    <a class="link" href="/modal/">資料請求</a>
+    <a class="link" href="/embed/">埋め込みフォーム</a>
+    <a class="link" href="/downloads/">資料ダウンロード</a>
+  </nav>
+  <span class="item">カート: <span class="badge">0</span></span>
+</header>
+
+<section class="box">
+  <h1>GTM実践学習ラボ</h1>
+  <p class="item">実務で詰まりがちなGTM設定を、意地悪なサイトで練習しましょう。</p>
+  <a class="btn btn-primary" href="/products/">無料で試す</a>
+</section>
+
+<section class="box">
+  <div class="card"><h3>Lv1〜5の18課題</h3><p class="item">基礎から二重計上対策まで。</p></div>
+  <div class="card"><h3>自動採点</h3><p class="item">実際のGA4ヒットを見て判定します。</p></div>
+  <div class="card"><h3>解答付き</h3><p class="item">詰まったら docs/ANSWERS.md へ。</p></div>
+</section>
+
+<footer class="box">
+  <p class="item">GTM実践学習ラボ（練習用ダミーサイト・検索非対象）</p>
+  <a class="btn btn-primary" href="/">無料で試す</a>
+</footer>
+
+<script src="assets/site.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var footerCta = document.querySelector('footer .btn-primary');
+    if (footerCta) {
+      footerCta.addEventListener('click', function () {
+        if (window.LabGrader) window.LabGrader.setScenarioContext('footer_cta_clicked');
+        setTimeout(function () { if (window.LabGrader) window.LabGrader.setScenarioContext(null); }, 200);
+      });
+    }
+  });
+</script>
 </body>
 </html>
