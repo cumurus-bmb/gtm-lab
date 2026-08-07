@@ -43,6 +43,7 @@
 <script>
 (function () {
   var mount = document.querySelector('[data-role="form-mount"]') || document.querySelector('section .box');
+  var scenarioToken = 0;
 
   function renderForm() {
     mount.innerHTML =
@@ -63,8 +64,10 @@
     var email = mount.querySelector('input[type="email"]').value;
     var isFail = email === 'fail@example.com';
     var submitBtn = mount.querySelector('.btn-primary');
-    if (submitBtn.disabled) return; // ignore clicks while a request is already in flight
+    if (submitBtn.disabled) return;
     submitBtn.disabled = true;
+
+    var myToken = ++scenarioToken;
 
     if (isFail && window.LabGrader) window.LabGrader.setScenarioContext('submit_failed');
 
@@ -76,7 +79,9 @@
     }).catch(function () {
       mount.querySelector('[data-role="error"]').style.display = 'block';
       submitBtn.disabled = false;
-      setTimeout(function () { if (window.LabGrader) window.LabGrader.setScenarioContext(null); }, 500);
+      setTimeout(function () {
+        if (myToken === scenarioToken && window.LabGrader) window.LabGrader.setScenarioContext(null);
+      }, 500);
     });
   }
 
