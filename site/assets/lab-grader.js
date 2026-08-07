@@ -286,9 +286,7 @@
   var PROGRESS_KEY = 'labgrader_progress_v1';
 
   function currentPath() {
-    var p = location.pathname;
-    if (p.length > 1 && p.slice(-1) === '/') p = p; // keep trailing slash form used by challenges.js
-    return p;
+    return location.pathname;
   }
 
   function pageChallenges() {
