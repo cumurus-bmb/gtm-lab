@@ -51,7 +51,7 @@
     if (footerCta) {
       footerCta.addEventListener('click', function () {
         if (window.LabGrader) window.LabGrader.setScenarioContext('footer_cta_clicked');
-        setTimeout(function () { if (window.LabGrader) window.LabGrader.setScenarioContext(null); }, 200);
+        setTimeout(function () { if (window.LabSite) window.LabSite.resetScenarioContext(); }, 200);
       });
     }
   });

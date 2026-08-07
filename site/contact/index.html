@@ -75,12 +75,12 @@
     // Promiseで表現する（本物のfetchはlab-grader.jsの傍受対象APIそのものなので、ここでは別名で呼び出す）
     mockSubmit(isFail).then(function () {
       mount.innerHTML = '<h2 class="item">送信ありがとうございました</h2><p class="item">担当者よりご連絡いたします。</p>';
-      if (window.LabGrader) window.LabGrader.setScenarioContext(null);
+      if (window.LabSite) window.LabSite.resetScenarioContext();
     }).catch(function () {
       mount.querySelector('[data-role="error"]').style.display = 'block';
       submitBtn.disabled = false;
       setTimeout(function () {
-        if (myToken === scenarioToken && window.LabGrader) window.LabGrader.setScenarioContext(null);
+        if (myToken === scenarioToken && window.LabSite) window.LabSite.resetScenarioContext();
       }, 500);
     });
   }

@@ -13,6 +13,7 @@
       getHits: function () { return []; },
       onHit: function () {},
       setScenarioContext: function () {},
+      restoreScenarioContext: function () {},
       registerScenarioSteps: function () {},
       runScenario: function () {},
       evaluate: function () { return { status: 'pending', reason: 'grader disabled' }; },
@@ -356,6 +357,13 @@
       var prog = loadProgress();
       pageChallenges().forEach(function (c) { delete prog[c.id]; });
       saveProgress(prog);
+      // このページの課題にひも付くセッション間重複判定（labgrader_sent_ids_v1）もあわせてクリアする。
+      // 一度だけ二重発火してしまい修正済みのlearnerが永久にFAILし続けることを防ぐ。
+      var hasDedupEligible = pageChallenges().some(function (c) { return c.expect && c.expect.event; });
+      if (hasDedupEligible) {
+        try { localStorage.removeItem(SENT_IDS_KEY); } catch (e) { /* storage unavailable */ }
+        dupFlags = [];
+      }
       renderChallenges();
     });
     var exportBtn = document.createElement('button');
@@ -364,7 +372,11 @@
     exportBtn.addEventListener('click', function () {
       var payload = JSON.stringify({ progress: loadProgress(), hits: window.LabGrader.getHits() }, null, 2);
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(payload).catch(function () {});
+        navigator.clipboard.writeText(payload).catch(function (err) {
+          console.warn('エクスポートに失敗しました:', err);
+        });
+      } else {
+        console.warn('このブラウザ/コンテキストではクリップボードにアクセスできません');
       }
     });
     controls.appendChild(resetBtn);
@@ -383,13 +395,23 @@
         var result = window.LabGrader.evaluate(c, hits);
         var dupHit = dupFlags.some(function (d) { return c.expect && d.event === c.expect.event; });
         if (dupHit) result = { status: 'fail', reason: '二重計上を検出しました（同一IDが再送されました）' };
-        prog[c.id] = result.status;
+        // 一度PASSした課題は、ヒットが空の新規ページロード直後の再評価（pending）で巻き戻さない。
+        // ただしfailへの巻き戻し（本物の退行）は許容する。表示もこの保持済みPASSに追従させる
+        // （result.statusをそのまま表示すると、新規ロード直後はヒットが空なのでpendingに見えてしまうため）。
+        var keepStoredPass = prog[c.id] === 'pass' && result.status === 'pending';
+        if (!keepStoredPass) {
+          prog[c.id] = result.status;
+        }
+        var displayStatus = prog[c.id];
+        var displayReason = keepStoredPass
+          ? 'PASS（記録済み。このページ読み込みではまだ新規ヒットを観測していません）'
+          : result.reason;
         var row = document.createElement('div');
         row.className = 'lg-row';
-        var label = result.status === 'pass' ? 'lg-pass' : result.status === 'fail' ? 'lg-fail' : 'lg-pending';
+        var label = displayStatus === 'pass' ? 'lg-pass' : displayStatus === 'fail' ? 'lg-fail' : 'lg-pending';
         row.innerHTML = '<span>' + c.title + '</span><span class="' + label + '">' +
-          (result.status === 'pass' ? 'PASS' : result.status === 'fail' ? 'FAIL' : '…') + '</span>';
-        row.title = result.reason;
+          (displayStatus === 'pass' ? 'PASS' : displayStatus === 'fail' ? 'FAIL' : '…') + '</span>';
+        row.title = displayReason;
         challengeList.appendChild(row);
       });
       saveProgress(prog);
@@ -417,6 +439,9 @@
     });
 
     renderChallenges();
+    // expectを持たない「observe_ms」だけの課題は、ヒットが一切来ないまま観測窓が満了してPASSになる。
+    // onHitが発火しないためこの再描画がないとパネルがpendingのまま固まる。学習ツールなので簡易な1秒ポーリングで十分。
+    setInterval(renderChallenges, 1000);
   }
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -429,6 +454,8 @@
     getHits: function () { return hits.slice(); },
     onHit: function (fn) { listeners.push(fn); },
     setScenarioContext: function (name) { currentContext = name || null; },
+    // 「長期的なコンテキストに戻す」用途の呼び出し元向けのエイリアス（挙動はsetScenarioContextと同一）
+    restoreScenarioContext: function (name) { currentContext = name || null; },
     registerScenarioSteps: registerScenarioSteps,
     runScenario: runScenario,
     evaluate: evaluateChallenge,

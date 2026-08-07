@@ -14,6 +14,18 @@ window.LabSite = (function () {
     if (badgeEl) badgeEl.textContent = String(count);
   }
 
+  // 短命なシナリオタグ（モーダルの開閉、フォーム失敗など）を使い終えた呼び出し元は、
+  // setScenarioContext(null)で無条件にクリアするのではなくこちらを使う。
+  // 同意未取得ならpre_consentコンテキストへ戻し、取得済みならnullへ戻す。
+  function resetScenarioContext() {
+    if (!window.LabGrader) return;
+    if (localStorage.getItem('lab_consent_v1') !== 'granted') {
+      window.LabGrader.restoreScenarioContext('pre_consent');
+    } else {
+      window.LabGrader.setScenarioContext(null);
+    }
+  }
+
   function initConsentBanner() {
     var CONSENT_KEY = 'lab_consent_v1';
     if (localStorage.getItem(CONSENT_KEY) === 'granted') {
@@ -50,6 +62,7 @@ window.LabSite = (function () {
   return {
     parsePriceToNumber: parsePriceToNumber,
     updateCartBadge: updateCartBadge,
-    initConsentBanner: initConsentBanner
+    initConsentBanner: initConsentBanner,
+    resetScenarioContext: resetScenarioContext
   };
 })();

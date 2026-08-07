@@ -63,17 +63,9 @@
   function openModal(location) {
     root.innerHTML = modalMarkup();
     if (window.LabGrader) window.LabGrader.setScenarioContext('modal_' + location);
-    var nameInput = root.querySelector('input[name="name"]');
-    var fired = false;
-    function markStart() {
-      if (fired) return;
-      fired = true;
-      // form_startの発火材料はGTM側で用意する（フォーカスイベント等）。ここではlocationの記録のみ。
-    }
-    nameInput.addEventListener('focus', markStart, { once: true });
     root.querySelector('[data-role="close"]').addEventListener('click', function () {
       root.innerHTML = '';
-      if (window.LabGrader) window.LabGrader.setScenarioContext(null);
+      if (window.LabSite) window.LabSite.resetScenarioContext();
     });
   }
 
