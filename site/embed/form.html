@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex,nofollow">
+<title>資料請求フォーム</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="box">
+  <label class="item">お名前<br><input class="box" type="text" name="name"></label>
+  <label class="item">メールアドレス<br><input class="box" type="email" name="email"></label>
+  <button class="btn btn-primary" type="button">送信する</button>
+  <p class="item" data-role="done" style="display:none;">送信しました。</p>
+</div>
+<script>
+document.querySelector('.btn-primary').addEventListener('click', function () {
+  document.querySelector('[data-role="done"]').style.display = 'block';
+  // 同一オリジンiframe → 親ページへの通知。GTM連携（dataLayer反映）は学習者が親ページ側で実装する。
+  window.parent.postMessage({ source: 'gtm-lab-embed-form', formId: 'embed_contact' }, window.location.origin);
+});
+</script>
+</body>
+</html>

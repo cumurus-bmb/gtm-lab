@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>埋め込みフォーム | GTM実践学習ラボ</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../config.js"></script>
+<script src="../assets/lab-grader.js"></script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',window.LAB_CONFIG.GTM_ID);</script>
+<!-- End Google Tag Manager -->
+<script src="../assets/challenges.js"></script>
+</head>
+<body>
+<header class="box">
+  <a class="link" href="../">GTM実践学習ラボ</a>
+  <nav class="box">
+    <a class="link" href="../products/">商品一覧</a>
+    <a class="link" href="../contact/">お問い合わせ</a>
+    <a class="link" href="../blog/">ブログ</a>
+    <a class="link" href="../modal/">資料請求</a>
+    <a class="link" href="./">埋め込みフォーム</a>
+    <a class="link" href="../downloads/">資料ダウンロード</a>
+  </nav>
+  <span class="item">カート: <span class="badge">0</span></span>
+</header>
+
+<section class="box">
+  <h1>埋め込みフォーム</h1>
+  <p class="item">このフォームは同一オリジンiframeとして埋め込まれています。</p>
+  <iframe src="form.html" style="width:100%;max-width:480px;height:260px;border:1px solid #ddd;"></iframe>
+</section>
+
+<footer class="box">
+  <p class="item">GTM実践学習ラボ（練習用ダミーサイト・検索非対象）</p>
+  <a class="btn btn-primary" href="../">無料で試す</a>
+</footer>
+
+<script src="../assets/site.js"></script>
+<script>
+// 親ページ側でpostMessageを受け取る仕組みだけ用意する。dataLayerへの反映はGTM側（学習者）が行う。
+window.addEventListener('message', function (event) {
+  if (event.origin !== window.location.origin) return;
+  if (!event.data || event.data.source !== 'gtm-lab-embed-form') return;
+  window.__lastEmbedFormMessage = event.data; // GTMのCustom HTML/Listenerタグから参照できるよう保持するだけ
+});
+</script>
+</body>
+</html>
