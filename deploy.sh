@@ -29,7 +29,7 @@ if grep -q "GTM-XXXXXXX" site/config.js; then
   fi
 fi
 
-LFTP_CMD="mirror -R --delete --verbose site/ ${FTP_REMOTE_DIR}"
+LFTP_CMD="mirror -R --delete --verbose site/ '${FTP_REMOTE_DIR}'"
 if [ "$DRY_RUN" = true ]; then
   LFTP_CMD="${LFTP_CMD} --dry-run"
 fi
