@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>商品詳細 | GTM実践学習ラボ</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../config.js"></script>
+<script src="../assets/lab-grader.js"></script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',window.LAB_CONFIG.GTM_ID);</script>
+<!-- End Google Tag Manager -->
+<script src="../assets/challenges.js"></script>
+</head>
+<body>
+<header class="box">
+  <a class="link" href="../">GTM実践学習ラボ</a>
+  <nav class="box">
+    <a class="link" href="./">商品一覧</a>
+    <a class="link" href="../contact/">お問い合わせ</a>
+    <a class="link" href="../blog/">ブログ</a>
+    <a class="link" href="../modal/">資料請求</a>
+    <a class="link" href="../embed/">埋め込みフォーム</a>
+    <a class="link" href="../downloads/">資料ダウンロード</a>
+  </nav>
+  <span class="item">カート: <span class="badge">0</span></span>
+</header>
+
+<section class="box">
+  <h1 class="item">商品詳細</h1>
+  <p class="item"><span class="price">¥12,800（税込）</span></p>
+  <button class="btn btn-primary" type="button">カートに追加</button>
+</section>
+
+<footer class="box">
+  <p class="item">GTM実践学習ラボ（練習用ダミーサイト・検索非対象）</p>
+  <a class="btn btn-primary" href="../">無料で試す</a>
+</footer>
+
+<script src="../assets/site.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var params = new URLSearchParams(location.search);
+  var sku = params.get('sku') || 'SKU-000';
+  var btn = document.querySelector('section .btn-primary');
+  btn.addEventListener('click', function () {
+    window.LabSite.updateCartBadge(1);
+    btn.textContent = 'カートに追加済み';
+  });
+  window.__labSku = sku; // ページ内スクリプト間の受け渡し用。GTM向けの計測ヒントではない
+});
+</script>
+</body>
+</html>
