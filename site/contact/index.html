@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>お問い合わせ | GTM実践学習ラボ</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../config.js"></script>
+<script src="../assets/lab-grader.js"></script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',window.LAB_CONFIG.GTM_ID);</script>
+<!-- End Google Tag Manager -->
+<script src="../assets/challenges.js"></script>
+</head>
+<body>
+<header class="box">
+  <a class="link" href="../">GTM実践学習ラボ</a>
+  <nav class="box">
+    <a class="link" href="../products/">商品一覧</a>
+    <a class="link" href="./">お問い合わせ</a>
+    <a class="link" href="../blog/">ブログ</a>
+    <a class="link" href="../modal/">資料請求</a>
+    <a class="link" href="../embed/">埋め込みフォーム</a>
+    <a class="link" href="../downloads/">資料ダウンロード</a>
+  </nav>
+  <span class="item">カート: <span class="badge">0</span></span>
+</header>
+
+<section class="box">
+  <h1>お問い合わせ</h1>
+  <div class="box" data-role="form-mount">
+    <p class="item">読み込み中…</p>
+  </div>
+</section>
+
+<footer class="box">
+  <p class="item">GTM実践学習ラボ（練習用ダミーサイト・検索非対象）</p>
+  <a class="btn btn-primary" href="../">無料で試す</a>
+</footer>
+
+<script src="../assets/site.js"></script>
+<script>
+(function () {
+  var mount = document.querySelector('[data-role="form-mount"]') || document.querySelector('section .box');
+
+  function renderForm() {
+    mount.innerHTML =
+      '<div class="box"><label class="item">お名前<br><input class="box" type="text" name="name"></label></div>' +
+      '<div class="box"><label class="item">メールアドレス<br><input class="box" type="email" name="email"></label></div>' +
+      '<button class="btn btn-primary" type="button">送信する</button>' +
+      '<p class="item" data-role="error" style="display:none;color:#c00;">送信に失敗しました。時間をおいて再度お試しください。</p>';
+
+    mount.querySelector('.btn-primary').addEventListener('click', function () {
+      submitForm();
+    });
+  }
+
+  function submitForm() {
+    var email = mount.querySelector('input[type="email"]').value;
+    var isFail = email === 'fail@example.com';
+
+    if (isFail && window.LabGrader) window.LabGrader.setScenarioContext('submit_failed');
+
+    // モックfetch: 失敗シナリオはrejectする実装だが、実際のネットワークには一切送出しない疑似APIとして
+    // Promiseで表現する（本物のfetchはlab-grader.jsの傍受対象APIそのものなので、ここでは別名で呼び出す）
+    mockSubmit(isFail).then(function () {
+      mount.innerHTML = '<h2 class="item">送信ありがとうございました</h2><p class="item">担当者よりご連絡いたします。</p>';
+      if (window.LabGrader) window.LabGrader.setScenarioContext(null);
+    }).catch(function () {
+      mount.querySelector('[data-role="error"]').style.display = 'block';
+      setTimeout(function () { if (window.LabGrader) window.LabGrader.setScenarioContext(null); }, 500);
+    });
+  }
+
+  function mockSubmit(isFail) {
+    return new Promise(function (resolve, reject) {
+      setTimeout(function () { isFail ? reject(new Error('mock failure')) : resolve(); }, 300);
+    });
+  }
+
+  setTimeout(renderForm, 800);
+
+  if (window.LabGrader) {
+    window.LabGrader.registerScenarioSteps('/contact/', {
+      fill_form_fail: function () {
+        return new Promise(function (resolve) {
+          var check = setInterval(function () {
+            var email = mount.querySelector('input[type="email"]');
+            if (email) {
+              clearInterval(check);
+              mount.querySelector('input[name="name"]').value = 'テスト太郎';
+              email.value = 'fail@example.com';
+              resolve();
+            }
+          }, 100);
+        });
+      },
+      fill_form_success: function () {
+        return new Promise(function (resolve) {
+          var check = setInterval(function () {
+            var email = mount.querySelector('input[type="email"]');
+            if (email) {
+              clearInterval(check);
+              mount.querySelector('input[name="name"]').value = 'テスト太郎';
+              email.value = 'ok@example.com';
+              resolve();
+            }
+          }, 100);
+        });
+      },
+      click_submit: function () {
+        var btn = mount.querySelector('.btn-primary');
+        if (btn) btn.click();
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>
