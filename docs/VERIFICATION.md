@@ -62,7 +62,7 @@ Hit Logはメモリ上の配列で、ページ遷移・リロードをまたい�
 - DevToolsのConsoleで採点パネルを前面に出す：
   ```js
   document.querySelector('.lg-panel').style.zIndex = 2147483647;
-  document.querySelector('.lg-panel').style.right = '420px';
+  document.querySelector('.lg-panel').style.right = '420px'; // Tag Assistantウィジェットの幅ぶん左へ寄せる
   ```
 
 **一番確実なのはDevTools Console**
@@ -70,3 +70,6 @@ UIの重なりや見た目のちらつきに振り回されたくないときは
 
 **GTM PreviewのURLから`?gtm_debug=...`が消えている**
 接続中のURLには`gtm_debug`クエリパラメータが付いている。何らかのリロードでこのパラメータが外れたプレーンなURLに着地すると、デバッグセッションが切断されている可能性が高く、Tag AssistantのデバッグコンソールもGA4 DebugViewも更新されなくなる。この状態はTag Assistant側で「接続されていません」と表示されるので気づける。プレーンなリロードだけでは接続は復活しないので、GTM側の「プレビュー」ボタンから再接続すること。
+
+**一度だけ二重発火してしまい、修正後も同じ課題がFAILし続ける**
+「このページをリセット」ボタンは、そのページの課題の進捗（`labgrader_progress_v1`）に加えて、セッションをまたぐ重複検出の状態（`labgrader_sent_ids_v1`）もあわせてクリアするようになっている。GTM設定のミスで`purchase`や`generate_lead`が一度だけ二重送信され、以後は正しく1回だけ発火するように直したのに二重計上FAILが消えない、という場合は、まず「このページをリセット」を押してから再テストすること。
